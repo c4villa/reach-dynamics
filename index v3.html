@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REACH DYNAMICS v3 | Media Science Engine</title>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <!-- Google Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        rel="stylesheet" />
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS CDN para exportación a Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    colors: {
+                        pmx: {
+                            bg: '#F8FAFC',
+                            card: '#FFFFFF',
+                            cardHover: '#F1F5F9',
+                            border: '#E2E8F0',
+                            borderActive: '#F59E0B',
+                            textMuted: '#64748B',
+                            textDark: '#0F172A',
+                            accent: '#D97706',
+                            accentGold: '#F59E0B',
+                            accentHover: '#B45309'
+                        },
+                        channelA: '#0284C7', // Sky 600
+                        channelB: '#059669', // Emerald 600
+                        fusion: '#D97706'    // Amber 600
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #F8FAFC;
+            color: #0F172A;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .icon-filled {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        .bg-pattern {
+            background-color: #F8FAFC;
+            background-image: radial-gradient(circle at top right, rgba(245, 158, 11, 0.08) 0%, rgba(2, 132, 199, 0.03) 30%, transparent 60%);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #F1F5F9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        input[type=range] {
+            accent-color: #F59E0B;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8 bg-pattern min-h-screen font-sans flex flex-col antialiased">
+
+    <!-- Contenedor Principal Centrado -->
+    <div class="max-w-[1440px] mx-auto w-full flex flex-col flex-1">
+
+        <!-- Header -->
+        <header
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-5 border-b border-slate-200 gap-4">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center">
+                    <img src="https://i.postimg.cc/CMJLRhn1/Logo-GMS.png" alt="GMS"
+                        class="h-[62px] md:h-[80px] object-contain">
+                </div>
+                <div class="flex flex-col justify-center">
+                    <h1
+                        class="text-slate-900 font-bold text-4xl md:text-5xl tracking-tight flex items-center gap-2.5 leading-none">
+                        <span class="font-light text-slate-300">|</span> REACH DYNAMICS <span
+                            class="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300 self-center">v3.0</span>
+                    </h1>
+                    <span class="text-xs text-slate-500 font-medium mt-1.5 flex items-center gap-1.5 ml-4 sm:ml-5">
+                        &ensp;MEDIA SCIENCE <span class="text-amber-600 font-bold">ENGINE</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Logo Cliente (Walmart) en la esquina superior derecha -->
+            <div class="flex items-center justify-end shrink-0 self-end sm:self-center">
+                <div
+                    class="flex items-center justify-center bg-white px-3.5 py-1.5 rounded-xl border border-slate-200/80 shadow-xs">
+                    <img src="https://i.postimg.cc/Qx3Njs5m/Walmart-logo.webp" alt="Walmart"
+                        class="h-8 md:h-10 object-contain">
+                </div>
+            </div>
+        </header>
+
+        <!-- Descripción & Acciones Rápidas -->
+        <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
+            <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-amber-600">hub</span>
+                <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+                    Herramienta avanzada de Media Science para modelar la sinergia de dos curvas de alcance.
+                </p>
+            </div>
+
+            <!-- Botones alineados a la derecha -->
+            <div class="flex items-center gap-2.5 shrink-0">
+                <button onclick="loadDefaultScenario()"
+                    class="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 py-2 px-3.5 rounded-xl shadow-xs transition cursor-pointer">
+                    <span class="material-symbols-outlined text-amber-600 text-base">auto_awesome</span> Cargar
+                    Curvas Demo
+                </button>
+                <button onclick="clearAllData()"
+                    class="flex items-center gap-1.5 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-xs text-slate-500 hover:text-rose-600 py-2 px-3 rounded-xl shadow-xs transition cursor-pointer">
+                    <span class="material-symbols-outlined text-base">delete_sweep</span> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 1: ENTRADA DE DATOS Y PREVIEWS INTEGRADOS POR MEDIO -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8 items-start">
+
+            <!-- ================= BLOQUE UNIFICADO MEDIO A ================= -->
+            <div class="flex flex-col">
+                <!-- Título Fuera del Card con Mayor Peso Visual (Director de Arte) -->
+                <div class="flex items-center gap-3 mb-3 px-1">
+                    <span class="w-3.5 h-3.5 rounded-full bg-sky-500 ring-4 ring-sky-100 inline-block shadow-xs"></span>
+                    <h3 class="text-slate-900 font-extrabold text-base uppercase tracking-wider">MEDIO A</h3>
+                    <span
+                        class="bg-sky-50 border border-sky-200/80 text-sky-700 font-bold text-[10px] px-2.5 py-0.5 rounded-full tracking-wide">CANAL
+                        1</span>
+                </div>
+
+                <!-- Card Contenedor Principal Medio A -->
+                <div
+                    class="bg-white border-2 border-sky-400 hover:border-sky-500 p-5 rounded-2xl shadow-sm transition-colors flex flex-col">
+                    <div class="flex flex-col lg:flex-row gap-5 items-stretch">
+
+                        <!-- Sub-panel Izquierdo: Entrada de Datos Medio A (~30% de ancho) -->
+                        <div class="w-full lg:w-[30%] shrink-0 flex flex-col justify-between">
+                            <div>
+                                <div class="mb-2.5">
+                                    <label class="block text-[10px] font-semibold text-slate-600 mb-1">Nombre del Medio
+                                        A</label>
+                                    <input id="nameA" type="text" value="Meta (Facebook + Instagram)"
+                                        class="w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:border-sky-500 focus:bg-white transition">
+                                </div>
+
+                                <label class="block text-[10px] font-semibold text-slate-600 mb-1">
+                                    Pega: <b class="text-slate-900">Inversión</b> y <b class="text-slate-900">Alcance
+                                        %</b>
+                                </label>
+                                <textarea id="inpA"
+                                    placeholder="Inversión&#9;Alcance %&#10;5000&#9;12.5%&#10;10000&#9;22.8%&#10;..."
+                                    class="w-full h-36 bg-slate-50 text-slate-800 border border-slate-200 rounded-lg p-2 text-[10px] font-mono focus:outline-none focus:border-sky-500 focus:bg-white custom-scrollbar mb-2.5 transition"></textarea>
+                            </div>
+
+                            <!-- Barra Inferior: Puntos y Botón Previsualizar -->
+                            <div
+                                class="flex justify-between items-center bg-sky-50/70 p-2 rounded-lg border border-sky-100 mt-auto">
+                                <span class="text-[11px] text-slate-600 font-medium">Pts: <b id="ptsA"
+                                        class="text-slate-900 font-bold">0</b></span>
+                                <button id="btnPreviewA" onclick="handlePreviewA()"
+                                    class="relative overflow-hidden bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] py-1.5 px-3 rounded-md shadow-xs transition flex items-center justify-center cursor-pointer disabled:opacity-95 disabled:cursor-not-allowed">
+                                    <div id="btnProgressA"
+                                        class="absolute left-0 top-0 bottom-0 bg-sky-800/60 w-0 pointer-events-none">
+                                    </div>
+                                    <span id="btnContentA"
+                                        class="relative z-10 flex items-center justify-center gap-1.5">Previsualizar</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sub-panel Derecho: Preview Curva A + Mini Cards (~70% de ancho) -->
+                        <div
+                            class="w-full lg:w-[70%] flex-1 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-4">
+                            <div>
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block shadow-sm"></span>
+                                        <h3 class="text-slate-800 font-bold text-xs uppercase tracking-wider">CURVA A
+                                        </h3>
+                                    </div>
+                                    <span
+                                        class="text-[10px] text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded border border-sky-200/60">Alcance
+                                        %</span>
+                                </div>
+
+                                <!-- Canvas Preview Chart A (Maximizando el alto a 235px) -->
+                                <div
+                                    class="relative w-full h-[235px] bg-slate-50/50 border border-slate-200/80 rounded-xl p-1.5 mb-2 flex items-center justify-center overflow-hidden">
+                                    <div id="phPreviewA"
+                                        class="absolute inset-0 flex flex-col items-center justify-center text-center p-3 bg-slate-50/95 z-10 transition-opacity">
+                                        <span
+                                            class="material-symbols-outlined text-2xl text-sky-500 mb-1">show_chart</span>
+                                        <span class="text-xs font-medium text-slate-500">Presiona "Previsualizar" o
+                                            calcula</span>
+                                    </div>
+                                    <canvas id="previewChartA"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Mini Cards Inferiores Compactas: Inversión A y Alcance A -->
+                            <div class="grid grid-cols-2 gap-2.5 mt-auto">
+                                <div
+                                    class="bg-slate-50 border border-sky-200/80 px-2.5 py-1.5 rounded-xl flex items-center justify-between gap-2">
+                                    <span
+                                        class="text-[9px] text-sky-900 uppercase font-bold tracking-wider shrink-0">INVERSIÓN</span>
+                                    <div class="relative flex items-center w-full max-w-[115px]">
+                                        <span class="absolute left-2 text-slate-400 text-xs font-semibold">$</span>
+                                        <input id="inpInvA" type="number" step="500" min="0" value="10000"
+                                            oninput="handleManualInvChange('A')"
+                                            class="w-full bg-white border border-slate-200 rounded-lg pl-5 pr-1.5 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:border-sky-500 transition">
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="bg-sky-50/70 border border-sky-200 px-2.5 py-1.5 rounded-xl flex items-center justify-between">
+                                    <div>
+                                        <span
+                                            class="text-[9px] text-sky-900 uppercase font-bold tracking-wider block leading-none">ALCANCE
+                                            A</span>
+                                        <span id="previewSubA"
+                                            class="text-[9px] text-slate-500 block leading-tight mt-0.5">Inv:
+                                            $10,000</span>
+                                    </div>
+                                    <p id="previewReachA" class="text-base font-extrabold text-sky-600 leading-none">
+                                        0.00%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= BLOQUE UNIFICADO MEDIO B ================= -->
+            <div class="flex flex-col">
+                <!-- Título Fuera del Card con Mayor Peso Visual (Director de Arte) -->
+                <div class="flex items-center gap-3 mb-3 px-1">
+                    <span
+                        class="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 inline-block shadow-xs"></span>
+                    <h3 class="text-slate-900 font-extrabold text-base uppercase tracking-wider">MEDIO B</h3>
+                    <span
+                        class="bg-emerald-50 border border-emerald-200/80 text-emerald-700 font-bold text-[10px] px-2.5 py-0.5 rounded-full tracking-wide">CANAL
+                        2</span>
+                </div>
+
+                <!-- Card Contenedor Principal Medio B -->
+                <div
+                    class="bg-white border-2 border-emerald-400 hover:border-emerald-500 p-5 rounded-2xl shadow-sm transition-colors flex flex-col">
+                    <div class="flex flex-col lg:flex-row gap-5 items-stretch">
+
+                        <!-- Sub-panel Izquierdo: Entrada de Datos Medio B (~30% de ancho) -->
+                        <div class="w-full lg:w-[30%] shrink-0 flex flex-col justify-between">
+                            <div>
+                                <div class="mb-2.5">
+                                    <label class="block text-[10px] font-semibold text-slate-600 mb-1">Nombre del Medio
+                                        B</label>
+                                    <input id="nameB" type="text" value="YouTube / Digital Video"
+                                        class="w-full bg-slate-50 text-slate-900 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium focus:outline-none focus:border-emerald-500 focus:bg-white transition">
+                                </div>
+
+                                <label class="block text-[10px] font-semibold text-slate-600 mb-1">
+                                    Pega: <b class="text-slate-900">Inversión</b> y <b class="text-slate-900">Alcance
+                                        %</b>
+                                </label>
+                                <textarea id="inpB"
+                                    placeholder="Inversión&#9;Alcance %&#10;8000&#9;15.2%&#10;16000&#9;26.4%&#10;..."
+                                    class="w-full h-36 bg-slate-50 text-slate-800 border border-slate-200 rounded-lg p-2 text-[10px] font-mono focus:outline-none focus:border-emerald-500 focus:bg-white custom-scrollbar mb-2.5 transition"></textarea>
+                            </div>
+
+                            <!-- Barra Inferior: Puntos y Botón Previsualizar -->
+                            <div
+                                class="flex justify-between items-center bg-emerald-50/70 p-2 rounded-lg border border-emerald-100 mt-auto">
+                                <span class="text-[11px] text-slate-600 font-medium">Pts: <b id="ptsB"
+                                        class="text-slate-900 font-bold">0</b></span>
+                                <button id="btnPreviewB" onclick="handlePreviewB()"
+                                    class="relative overflow-hidden bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] py-1.5 px-3 rounded-md shadow-xs transition flex items-center justify-center cursor-pointer disabled:opacity-95 disabled:cursor-not-allowed">
+                                    <div id="btnProgressB"
+                                        class="absolute left-0 top-0 bottom-0 bg-emerald-800/60 w-0 pointer-events-none">
+                                    </div>
+                                    <span id="btnContentB"
+                                        class="relative z-10 flex items-center justify-center gap-1.5">Previsualizar</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Sub-panel Derecho: Preview Curva B + Mini Cards (~70% de ancho) -->
+                        <div
+                            class="w-full lg:w-[70%] flex-1 flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-4">
+                            <div>
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span
+                                            class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-sm"></span>
+                                        <h3 class="text-slate-800 font-bold text-xs uppercase tracking-wider">CURVA B
+                                        </h3>
+                                    </div>
+                                    <span
+                                        class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">Alcance
+                                        %</span>
+                                </div>
+
+                                <!-- Canvas Preview Chart B (Maximizando el alto a 235px) -->
+                                <div
+                                    class="relative w-full h-[235px] bg-slate-50/50 border border-slate-200/80 rounded-xl p-1.5 mb-2 flex items-center justify-center overflow-hidden">
+                                    <div id="phPreviewB"
+                                        class="absolute inset-0 flex flex-col items-center justify-center text-center p-3 bg-slate-50/95 z-10 transition-opacity">
+                                        <span
+                                            class="material-symbols-outlined text-2xl text-emerald-500 mb-1">show_chart</span>
+                                        <span class="text-xs font-medium text-slate-500">Presiona "Previsualizar" o
+                                            calcula</span>
+                                    </div>
+                                    <canvas id="previewChartB"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Mini Cards Inferiores Compactas: Inversión B y Alcance B -->
+                            <div class="grid grid-cols-2 gap-2.5 mt-auto">
+                                <div
+                                    class="bg-slate-50 border border-emerald-200/80 px-2.5 py-1.5 rounded-xl flex items-center justify-between gap-2">
+                                    <span
+                                        class="text-[9px] text-emerald-900 uppercase font-bold tracking-wider shrink-0">INVERSIÓN</span>
+                                    <div class="relative flex items-center w-full max-w-[115px]">
+                                        <span class="absolute left-2 text-slate-400 text-xs font-semibold">$</span>
+                                        <input id="inpInvB" type="number" step="500" min="0" value="10000"
+                                            oninput="handleManualInvChange('B')"
+                                            class="w-full bg-white border border-slate-200 rounded-lg pl-5 pr-1.5 py-1 text-xs font-bold text-slate-900 focus:outline-none focus:border-emerald-500 transition">
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="bg-emerald-50/70 border border-emerald-200 px-2.5 py-1.5 rounded-xl flex items-center justify-between">
+                                    <div>
+                                        <span
+                                            class="text-[9px] text-emerald-900 uppercase font-bold tracking-wider block leading-none">ALCANCE
+                                            B</span>
+                                        <span id="previewSubB"
+                                            class="text-[9px] text-slate-500 block leading-tight mt-0.5">Inv:
+                                            $10,000</span>
+                                    </div>
+                                    <p id="previewReachB"
+                                        class="text-base font-extrabold text-emerald-600 leading-none">0.00%</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- MASTER LAYOUT: PARÁMETROS (IZQUIERDA ~25%) + [KPIS + GRÁFICO COMBINADO] (DERECHA ~75%) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 items-start">
+
+            <!-- ================= COLUMNA IZQUIERDA: PARÁMETROS DE INTEGRACIÓN (25% - 30% ancho) ================= -->
+            <div class="lg:col-span-4 xl:col-span-3">
+                <div
+                    class="bg-amber-50/60 border border-amber-200/90 p-5 rounded-2xl shadow-sm flex flex-col justify-between space-y-4">
+
+                    <!-- Encabezado del Módulo -->
+                    <div class="flex items-center gap-2.5 pb-3 border-b border-amber-200/70">
+                        <div
+                            class="w-8 h-8 rounded-xl bg-amber-100/90 border border-amber-300 flex items-center justify-center text-amber-700 shadow-2xs shrink-0">
+                            <span class="material-symbols-outlined text-lg">tune</span>
+                        </div>
+                        <div>
+                            <h3
+                                class="text-amber-950 font-bold text-sm sm:text-base uppercase tracking-wider leading-tight">
+                                PARÁMETROS DE
+                                INTEGRACIÓN</h3>
+                            <p class="text-[10px] text-amber-900/75 leading-tight mt-0.5">Configuración &amp; Simulación
+                                A + B
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Parámetro 1: Inversión Total a Evaluar -->
+                    <div class="bg-white/90 backdrop-blur-xs border border-amber-200/90 p-3 rounded-xl shadow-2xs">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[13px] text-amber-600">payments</span>
+                                Inversión a Evaluar
+                            </label>
+                            <span id="simBudgetDisplay" class="text-xs font-black text-amber-700">$50,000</span>
+                        </div>
+                        <p class="text-[9px] text-slate-400 font-medium mb-1.5 leading-tight">Mueve el control para ver
+                            el impacto en tiempo real.</p>
+                        <input type="range" id="simBudgetSlider" min="1000" max="100000" step="1000" value="50000"
+                            class="w-full h-2 bg-amber-200/60 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                        <div class="flex justify-between text-[9px] text-slate-500 mt-1 font-semibold">
+                            <span id="minSliderLbl">$1,000</span>
+                            <span id="maxSliderLbl">$100,000</span>
+                        </div>
+                    </div>
+
+                    <!-- Parámetro 2: Factor de Duplicación (D) -->
+                    <div class="bg-white/70 border border-amber-200/70 p-3 rounded-xl shadow-2xs">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                                Factor Duplicación (D)
+                                <span class="material-symbols-outlined text-[13px] text-slate-400 cursor-help"
+                                    title="1.0 = Duplicación independiente. <1.0 = Complementario. >1.0 = Alto solapamiento.">help</span>
+                            </label>
+                            <span id="dupFactorVal"
+                                class="text-[10px] font-extrabold text-amber-900 bg-white px-2 py-0.5 rounded border border-amber-300 shadow-2xs">
+                                1.00 (Estándar)
+                            </span>
+                        </div>
+                        <input type="range" id="dupFactor" min="0.5" max="1.3" step="0.05" value="1.0"
+                            class="w-full h-2 bg-amber-200/60 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                        <div class="flex justify-between text-[8.5px] text-amber-900/70 mt-1 font-semibold">
+                            <span>0.5 (Complem.)</span>
+                            <span>1.0 (Random)</span>
+                            <span>1.3 (Solape)</span>
+                        </div>
+                    </div>
+
+                    <!-- Parámetro 3: Distribución Inversión (Split %) -->
+                    <div class="bg-white/70 border border-amber-200/70 p-3 rounded-xl shadow-2xs">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[11px] font-bold text-slate-800">Distribución (Split %)</label>
+                            <span id="splitVal"
+                                class="text-[10px] font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+                                <span class="text-sky-700 font-bold">50% A</span> / <span
+                                    class="text-emerald-700 font-bold">50% B</span>
+                            </span>
+                        </div>
+                        <input type="range" id="splitSlider" min="5" max="95" step="5" value="50"
+                            class="w-full h-2 bg-amber-200/60 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                        <div class="flex justify-between text-[8.5px] text-slate-500 mt-1 font-medium">
+                            <span class="text-sky-700 font-semibold">95% A</span>
+                            <span class="text-slate-600 font-medium">50/50</span>
+                            <span class="text-emerald-700 font-semibold">95% B</span>
+                        </div>
+                    </div>
+
+                    <!-- Parámetro 4: Estrategia de Simulación con Tooltips Flotantes -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                                Estrategia de Simulación
+                                <span class="material-symbols-outlined text-[13px] text-slate-400 cursor-help"
+                                    title="Selecciona entre una distribución fija porcentual manual o la optimización algorítmica de máxima cobertura.">help</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <!-- Botón Split Fijo con Tooltip -->
+                            <div class="relative group">
+                                <button id="btnModeFixed" onclick="setMode('fixed')"
+                                    class="w-full py-2 px-2 rounded-xl border-2 text-[10px] font-extrabold border-amber-500 text-amber-950 bg-white transition text-center shadow-xs cursor-pointer">
+                                    Split Fijo (% A / % B)
+                                </button>
+                                <!-- Tooltip Flotante -->
+                                <div
+                                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 bg-slate-900/95 backdrop-blur-xs text-white text-[10px] rounded-xl shadow-xl border border-slate-700 pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-30 text-center leading-relaxed">
+                                    <span class="font-bold text-amber-400 block mb-0.5">Split Fijo (% A / % B)</span>
+                                    Distribuye el presupuesto entre Medio A y B según el porcentaje manual fijado en el
+                                    slider.
+                                    <div
+                                        class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Botón Frontera Óptima con Tooltip -->
+                            <div class="relative group">
+                                <button id="btnModeOptimal" onclick="setMode('optimal')"
+                                    class="w-full py-2 px-2 rounded-xl border border-amber-200/80 text-[10px] font-semibold text-amber-900/80 hover:text-amber-950 bg-amber-100/50 hover:bg-white transition text-center cursor-pointer">
+                                    Frontera Óptima
+                                </button>
+                                <!-- Tooltip Flotante -->
+                                <div
+                                    class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 bg-slate-900/95 backdrop-blur-xs text-white text-[10px] rounded-xl shadow-xl border border-slate-700 pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-30 text-center leading-relaxed">
+                                    <span class="font-bold text-amber-400 block mb-0.5">Frontera Óptima</span>
+                                    Algoritmo Media Science que busca y asigna automáticamente el mix ideal que maximiza
+                                    el alcance neto unificado.
+                                    <div
+                                        class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parámetro 5: Botón Principal Calcular (Colores originales de index.html) -->
+                    <div class="pt-1">
+                        <button id="btnCalculate" onclick="handleCalculateClick()"
+                            class="relative overflow-hidden w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 active:scale-[0.99] text-white font-extrabold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition-all duration-200 shadow-[0_4px_14px_rgba(245,158,11,0.35)] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-95 disabled:cursor-not-allowed">
+                            <!-- Barra de Progreso Interna -->
+                            <div id="btnProgressBar"
+                                class="absolute left-0 top-0 bottom-0 bg-amber-700/60 w-0 transition-all ease-linear pointer-events-none">
+                            </div>
+                            <!-- Contenido del Botón -->
+                            <div id="btnContent"
+                                class="relative z-10 flex items-center justify-center gap-1.5 font-extrabold text-white">
+                                <span class="material-symbols-outlined text-base font-bold text-white">merge_type</span>
+                                CALCULAR CURVA RESULTANTE
+                            </div>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ================= COLUMNA DERECHA: [6 KPIS SUPERIORES] + [CURVAS DE ALCANCE COMBINADAS] (~75% ancho) ================= -->
+            <div class="lg:col-span-8 xl:col-span-9 flex flex-col space-y-4">
+
+                <!-- 1. LOS 6 CARDS DE RESULTADOS TOTALES / KPIS (ENCIMA DEL GRÁFICO) -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5">
+
+                    <div
+                        class="bg-white border border-amber-200/90 p-3 rounded-xl flex flex-col justify-between shadow-xs hover:shadow-sm transition">
+                        <span class="text-[9px] text-amber-800 uppercase font-bold tracking-wider leading-tight">Alcance
+                            Integración (A+B)</span>
+                        <p id="kpiFusionReach" class="text-xl font-extrabold text-amber-600 mt-1">0.00%</p>
+                        <span id="kpiFusionSub" class="text-[9px] text-slate-500 mt-0.5 leading-none">Cobertura
+                            Unificada Neta</span>
+                    </div>
+
+                    <div
+                        class="bg-white border border-sky-100 p-3 rounded-xl flex flex-col justify-between shadow-xs hover:shadow-sm transition">
+                        <span class="text-[9px] text-sky-700 uppercase font-bold tracking-wider leading-tight">Alcance
+                            Medio A</span>
+                        <p id="kpiReachA" class="text-xl font-extrabold text-sky-600 mt-1">0.00%</p>
+                        <span id="kpiInvA" class="text-[9px] text-slate-500 mt-0.5 leading-none">Inversión: $0</span>
+                    </div>
+
+                    <div
+                        class="bg-white border border-emerald-100 p-3 rounded-xl flex flex-col justify-between shadow-xs hover:shadow-sm transition">
+                        <span
+                            class="text-[9px] text-emerald-700 uppercase font-bold tracking-wider leading-tight">Alcance
+                            Medio B</span>
+                        <p id="kpiReachB" class="text-xl font-extrabold text-emerald-600 mt-1">0.00%</p>
+                        <span id="kpiInvB" class="text-[9px] text-slate-500 mt-0.5 leading-none">Inversión: $0</span>
+                    </div>
+
+                    <div
+                        class="bg-white border border-emerald-200/80 p-3 rounded-xl flex flex-col justify-between shadow-xs hover:shadow-sm transition">
+                        <span class="text-[9px] text-emerald-800 uppercase font-bold tracking-wider leading-tight">+Δ
+                            Incremento Puro</span>
+                        <p id="kpiIncReach" class="text-xl font-extrabold text-emerald-600 mt-1">+0.00 pp</p>
+                        <span class="text-[9px] text-slate-500 mt-0.5 leading-none">vs. Mejor Medio Solo</span>
+                    </div>
+
+                    <div
+                        class="bg-white border border-amber-100 p-3 rounded-xl flex flex-col justify-between shadow-xs hover:shadow-sm transition">
+                        <span
+                            class="text-[9px] text-amber-800 uppercase font-bold tracking-wider leading-tight">Solapamiento
+                            / Duplic.</span>
+                        <p id="kpiOverlap" class="text-xl font-extrabold text-amber-700 mt-1">0.00%</p>
+                        <span class="text-[9px] text-slate-500 mt-0.5 leading-none">Audiencia Co-alcanzada</span>
+                    </div>
+
+                    <div
+                        class="bg-white border border-slate-200 p-3 rounded-xl flex flex-col justify-between shadow-xs hover:shadow-sm transition">
+                        <span
+                            class="text-[9px] text-slate-700 uppercase font-bold tracking-wider leading-tight">Inversión
+                            Total</span>
+                        <p id="kpiTotalInv" class="text-xl font-extrabold text-slate-900 mt-1">$0</p>
+                        <span id="kpiEfficiency" class="text-[9px] text-slate-500 mt-0.5 leading-none">Eficiencia
+                            Global</span>
+                    </div>
+
+                </div>
+
+                <!-- 2. MÓDULO DE CURVAS DE ALCANCE: MEDIO A, MEDIO B & INTEGRACIÓN (DEBAJO DE LOS KPIS) -->
+                <div class="bg-white border border-slate-200 p-5 sm:p-6 rounded-2xl shadow-sm">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-slate-900 flex items-center gap-2 font-bold text-sm sm:text-base">
+                                <span
+                                    class="material-symbols-outlined text-lg sm:text-xl text-amber-600">show_chart</span>
+                                CURVA COMBINADA (A+B)
+                            </h3>
+                            <p class="text-xs text-slate-500">Curva individual de cada medio vs. Curva unificada de
+                                Media Science.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-xs font-medium">
+                            <div
+                                class="flex items-center gap-1.5 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200">
+                                <span class="w-3 h-1 bg-sky-500 rounded-full"></span>
+                                <span class="text-sky-800" id="legendA">Medio A</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                <span class="w-3 h-1 bg-emerald-500 rounded-full"></span>
+                                <span class="text-emerald-800" id="legendB">Medio B</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-300 shadow-xs">
+                                <span class="w-3 h-1.5 bg-amber-500 rounded-full"></span>
+                                <span class="text-amber-900 font-bold">Integración (A+B)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Gráfico con Placeholder de Espera Inicial -->
+                    <div
+                        class="relative w-full h-[460px] bg-slate-50/50 border border-slate-200/80 rounded-xl p-2 flex items-center justify-center overflow-hidden">
+                        <div id="chartPlaceholder"
+                            class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 bg-slate-50/95 backdrop-blur-xs rounded-xl z-10 transition-opacity duration-300">
+                            <div
+                                class="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mb-3 shadow-xs">
+                                <span id="chartPlaceholderIcon"
+                                    class="material-symbols-outlined text-3xl text-amber-600">query_stats</span>
+                            </div>
+                            <h4 id="chartPlaceholderTitle" class="text-slate-800 font-bold text-base mb-1">Módulo de
+                                Integración en Espera</h4>
+                            <p id="chartPlaceholderSub" class="text-xs text-slate-500 max-w-md leading-relaxed">
+                                Ingresa los datos de inversión y alcance para el <b>Medio A</b> y <b>Medio B</b>, luego
+                                presiona <b class="text-amber-700 font-semibold">"Calcular Curva Resultante"</b> para
+                                generar la curva unificada.
+                            </p>
+                        </div>
+                        <canvas id="fusionChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SECCIÓN 5: RECOMENDACIÓN EJECUTIVA DE MEDIA SCIENCE -->
+        <div class="bg-amber-50/70 p-6 rounded-2xl border border-amber-200 text-slate-900 mb-8 shadow-sm">
+            <h3 class="font-bold flex items-center gap-2 mb-2 text-base text-amber-950">
+                <span class="material-symbols-outlined text-xl text-amber-600">lightbulb</span> DIAGNÓSTICO ESTRATÉGICO
+                &amp; RECOMENDACIÓN MEDIA SCIENCE
+            </h3>
+            <div id="execRecommendation" class="text-xs md:text-sm leading-relaxed text-slate-700">
+                Ingresa los datos de ambos medios y presiona <b>"Calcular Curva Resultante"</b> para generar el
+                diagnóstico de sinergia y saturación.
+            </div>
+        </div>
+
+        <!-- SECCIÓN 6: TABLA ANALÍTICA PUNTO A PUNTO & EXPORTACIÓN -->
+        <div class="bg-white border border-slate-200 p-6 rounded-2xl mb-12 shadow-sm">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                <div>
+                    <h3 class="text-slate-900 flex items-center gap-2 font-bold text-base">
+                        <span class="material-symbols-outlined text-xl text-amber-600">table_chart</span> TABLA
+                        DETALLADA DE SIMULACIÓN MULTIMEDIO
+                    </h3>
+                    <p class="text-xs text-slate-500">Trayectoria punto a punto de inversión, alcance desagregado y
+                        rendimiento marginal.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="exportToExcel()"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition-colors flex items-center gap-2 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">table_view</span> Exportar a Excel (.xlsx)
+                    </button>
+                    <button onclick="exportToCSV()"
+                        class="bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-semibold py-2.5 px-3.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">download</span> CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="max-h-[420px] overflow-auto custom-scrollbar border border-slate-200 rounded-xl">
+                <table class="w-full text-right text-xs whitespace-nowrap">
+                    <thead
+                        class="bg-slate-900 text-slate-200 uppercase text-[10px] tracking-wider font-semibold sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Punto</th>
+                            <th class="px-4 py-3 text-right">Inversión Total</th>
+                            <th class="px-4 py-3 text-right text-sky-400">Inv. Medio A</th>
+                            <th class="px-4 py-3 text-right text-emerald-400">Inv. Medio B</th>
+                            <th class="px-4 py-3 text-right text-sky-400">Alcance Medio A %</th>
+                            <th class="px-4 py-3 text-right text-emerald-400">Alcance Medio B %</th>
+                            <th class="px-4 py-3 text-right text-amber-400 font-bold">Alcance Integración (A+B) %</th>
+                            <th class="px-4 py-3 text-right text-emerald-400">+Δ Inc. vs Max</th>
+                            <th class="px-4 py-3 text-right">pp/MM Marginal</th>
+                            <th class="px-4 py-3 text-center">Zona Eficiencia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblBody" class="divide-y divide-slate-100 bg-white text-slate-800 font-mono">
+                        <tr>
+                            <td colspan="10" class="text-center py-8 text-slate-400 font-sans">Sin datos cargados. Carga
+                                datos y haz clic en calcular.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer
+            class="border-t border-slate-200 pt-6 pb-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+            <div class="flex items-center gap-2">
+                <span>Powered by</span>
+                <span class="text-amber-600 font-bold tracking-wide">PMX LIFT AI</span>
+            </div>
+            <div>Private and Confidential &nbsp;|&nbsp; &copy; PUBLICIS GROUPE. All Rights Reserved</div>
+        </footer>
+
+    </div>
+
+    <!-- MOTOR JAVASCRIPT & MEDIA SCIENCE CALCULATIONS -->
+    <script>
+        // Muestras por defecto
+        const sampleA_Data = `Inversión\tAlcance %
+2500\t8.5%
+5000\t15.2%
+7500\t21.0%
+10000\t26.4%
+15000\t34.8%
+20000\t41.2%
+25000\t46.0%
+30000\t49.8%
+35000\t52.7%
+40000\t54.9%
+50000\t58.1%
+60000\t60.2%
+75000\t62.4%
+90000\t63.8%
+100000\t64.5%`;
+
+        const sampleB_Data = `Inversión\tAlcance %
+3000\t6.2%
+6000\t11.8%
+9000\t16.9%
+12000\t21.5%
+18000\t29.4%
+24000\t35.8%
+30000\t40.9%
+36000\t44.8%
+42000\t47.9%
+50000\t51.0%
+60000\t53.8%
+75000\t56.7%
+90000\t58.6%
+100000\t59.4%`;
+
+        let fitModelA = null;
+        let fitModelB = null;
+        let chartInstance = null;
+        let chartInstanceA = null;
+        let chartInstanceB = null;
+        let simMode = 'fixed'; // 'fixed' | 'optimal'
+        let tableDataCache = [];
+        let hasCalculatedFusion = false;
+
+        // Utilidades numéricas
+        const formatMoney = (v) => isFinite(v) ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
+        const formatPct = (v, d = 2) => isFinite(v) ? v.toFixed(d) + '%' : '0.00%';
+        const cleanNum = (v) => {
+            let s = String(v ?? '').trim().replace(/%/g, '').replace(/,/g, '');
+            return parseFloat(s);
+        };
+
+        function parseInput(text) {
+            if (!text || !text.trim()) return [];
+            let lines = text.trim().split(/\r?\n/).filter(Boolean);
+            let out = [];
+            let start = /invers|alcance|reach|investment|cost|spend/i.test(lines[0]) ? 1 : 0;
+            for (let i = start; i < lines.length; i++) {
+                let p = lines[i].split(/\t|;/);
+                if (p.length < 2) p = lines[i].split(',');
+                let inv = cleanNum(p[0]);
+                let reach = cleanNum(p[1]);
+                if (isFinite(inv) && isFinite(reach) && inv > 0) {
+                    if (reach <= 1 && reach > 0) reach *= 100;
+                    out.push({ inv, reach });
+                }
+            }
+            return out.sort((a, b) => a.inv - b.inv);
+        }
+
+        // Ajuste de curva Hill / S-Curve: R(x) = A * x^n / (k^n + x^n)
+        function fitHillCurve(rows) {
+            if (!rows || rows.length < 2) return null;
+            let xs = rows.map(r => r.inv);
+            let ys = rows.map(r => r.reach);
+            let xmin = Math.min(...xs), xmax = Math.max(...xs), ymax = Math.max(...ys);
+
+            let best = { sse: 1e99, A: ymax, n: 1, k: xmin, r2: 0, xmax, ymax };
+
+            // Búsqueda en grilla optimizada
+            for (let m = 1.0; m <= 1.5; m += 0.05) {
+                let A = Math.min(100, ymax * m);
+                for (let n = 0.6; n <= 4.0; n += 0.15) {
+                    for (let k = xmin * 0.5; k <= xmax * 1.5; k += (xmax - xmin) / 35) {
+                        let s = 0;
+                        for (let i = 0; i < xs.length; i++) {
+                            let xp = Math.pow(xs[i], n);
+                            let kp = Math.pow(k, n);
+                            let pred = A * xp / (kp + xp);
+                            s += Math.pow(ys[i] - pred, 2);
+                        }
+                        if (s < best.sse) {
+                            best = { A, n, k, sse: s, r2: 0, xmax, ymax };
+                        }
+                    }
+                }
+            }
+
+            let mean = ys.reduce((a, b) => a + b, 0) / ys.length;
+            let sst = ys.reduce((a, b) => a + Math.pow(b - mean, 2), 0);
+            best.r2 = sst > 0 ? Math.max(0, 1 - best.sse / sst) : 0.95;
+            return best;
+        }
+
+        // Predicción de alcance individual
+        function predictReach(inv, model) {
+            if (!model || inv <= 0) return 0;
+            let xp = Math.pow(inv, model.n);
+            let kp = Math.pow(model.k, model.n);
+            let r = model.A * xp / (kp + xp);
+            return Math.min(r, model.A, 100);
+        }
+
+        // Fusión de Alcance (Media Science Duplication Model)
+        function combineReach(reachA, reachB, dupFactor = 1.0) {
+            let rA = Math.min(Math.max(reachA, 0), 100);
+            let rB = Math.min(Math.max(reachB, 0), 100);
+            let overlap = (dupFactor * (rA * rB)) / 100;
+            let combined = rA + rB - overlap;
+            return Math.min(Math.max(combined, Math.max(rA, rB)), 100);
+        }
+
+        function loadSampleA() {
+            document.getElementById('inpA').value = sampleA_Data;
+            document.getElementById('nameA').value = "Meta (Facebook + Instagram)";
+        }
+
+        function loadSampleB() {
+            document.getElementById('inpB').value = sampleB_Data;
+            document.getElementById('nameB').value = "YouTube / Digital Video";
+        }
+
+        function loadDefaultScenario() {
+            loadSampleA();
+            loadSampleB();
+
+            // Mantener valores de inversión por defecto en 10,000
+            document.getElementById('inpInvA').value = '10000';
+            document.getElementById('inpInvB').value = '10000';
+            document.getElementById('previewReachA').innerText = '0.00%';
+            document.getElementById('previewSubA').innerText = 'Inversión: $10,000';
+            document.getElementById('previewReachB').innerText = '0.00%';
+            document.getElementById('previewSubB').innerText = 'Inversión: $10,000';
+
+            // Destruir instancias previas y asegurar que los placeholders se muestren
+            if (chartInstanceA) {
+                chartInstanceA.destroy();
+                chartInstanceA = null;
+            }
+            if (chartInstanceB) {
+                chartInstanceB.destroy();
+                chartInstanceB = null;
+            }
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+
+            const phA = document.getElementById('phPreviewA');
+            if (phA) phA.classList.remove('hidden');
+            const phB = document.getElementById('phPreviewB');
+            if (phB) phB.classList.remove('hidden');
+            const ph = document.getElementById('chartPlaceholder');
+            if (ph) ph.classList.remove('hidden');
+
+            fitModelA = null;
+            fitModelB = null;
+            hasCalculatedFusion = false;
+            resetPlaceholderContent();
+
+            showToast("✓ Datos de Curvas Demo cargados. Presiona 'Previsualizar' en cada card para generar su curva.");
+        }
+
+        function clearAllData() {
+            document.getElementById('inpA').value = '';
+            document.getElementById('inpB').value = '';
+            document.getElementById('ptsA').innerText = '0';
+            document.getElementById('ptsB').innerText = '0';
+
+            document.getElementById('inpInvA').value = '10000';
+            document.getElementById('inpInvB').value = '10000';
+            document.getElementById('previewReachA').innerText = '0.00%';
+            document.getElementById('previewSubA').innerText = 'Inversión: $10,000';
+            document.getElementById('previewReachB').innerText = '0.00%';
+            document.getElementById('previewSubB').innerText = 'Inversión: $10,000';
+
+            // Resetear KPIs
+            document.getElementById('kpiFusionReach').innerText = '0.00%';
+            document.getElementById('kpiReachA').innerText = '0.00%';
+            document.getElementById('kpiInvA').innerText = 'Inversión: $0';
+            document.getElementById('kpiReachB').innerText = '0.00%';
+            document.getElementById('kpiInvB').innerText = 'Inversión: $0';
+            document.getElementById('kpiIncReach').innerText = '+0.00 pp';
+            document.getElementById('kpiOverlap').innerText = '0.00%';
+            document.getElementById('kpiTotalInv').innerText = '$0';
+            document.getElementById('kpiEfficiency').innerText = 'Eficiencia Global';
+
+            fitModelA = null;
+            fitModelB = null;
+            hasCalculatedFusion = false;
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+            if (chartInstanceA) {
+                chartInstanceA.destroy();
+                chartInstanceA = null;
+            }
+            if (chartInstanceB) {
+                chartInstanceB.destroy();
+                chartInstanceB = null;
+            }
+
+            // Mostrar nuevamente los placeholders
+            const ph = document.getElementById('chartPlaceholder');
+            if (ph) ph.classList.remove('hidden');
+            const phA = document.getElementById('phPreviewA');
+            if (phA) phA.classList.remove('hidden');
+            const phB = document.getElementById('phPreviewB');
+            if (phB) phB.classList.remove('hidden');
+            resetPlaceholderContent();
+
+            document.getElementById('execRecommendation').innerHTML = `Ingresa los datos de ambos medios y presiona <b>"Calcular Curva Resultante"</b> para generar el diagnóstico de sinergia y saturación.`;
+            document.getElementById('tblBody').innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400 font-sans">Sin datos cargados. Carga datos y haz clic en calcular.</td></tr>`;
+        }
+
+        function setMode(mode) {
+            simMode = mode;
+            const btnFixed = document.getElementById('btnModeFixed');
+            const btnOpt = document.getElementById('btnModeOptimal');
+            if (mode === 'fixed') {
+                btnFixed.className = "w-full py-2 px-2 rounded-xl border-2 text-[10px] font-extrabold border-amber-500 text-amber-950 bg-white transition text-center shadow-xs cursor-pointer";
+                btnOpt.className = "w-full py-2 px-2 rounded-xl border border-amber-200/80 text-[10px] font-semibold text-amber-900/80 hover:text-amber-950 bg-amber-100/50 hover:bg-white transition text-center cursor-pointer";
+            } else {
+                btnOpt.className = "w-full py-2 px-2 rounded-xl border-2 text-[10px] font-extrabold border-amber-500 text-amber-950 bg-white transition text-center shadow-xs cursor-pointer";
+                btnFixed.className = "w-full py-2 px-2 rounded-xl border border-amber-200/80 text-[10px] font-semibold text-amber-900/80 hover:text-amber-950 bg-amber-100/50 hover:bg-white transition text-center cursor-pointer";
+            }
+            updateRealtimeSimulation();
+        }
+
+        let isCalculating = false;
+
+        function resetPlaceholderContent() {
+            const phIcon = document.getElementById('chartPlaceholderIcon');
+            if (phIcon) {
+                phIcon.className = "material-symbols-outlined text-3xl text-amber-600";
+                phIcon.innerText = "query_stats";
+            }
+            const phTitle = document.getElementById('chartPlaceholderTitle');
+            if (phTitle) phTitle.innerText = "Módulo de Integración en Espera";
+            const phSub = document.getElementById('chartPlaceholderSub');
+            if (phSub) {
+                phSub.innerHTML = `Ingresa los datos de inversión y alcance para el <b>Medio A</b> y <b>Medio B</b>, luego presiona <b class="text-amber-700 font-semibold">"Calcular Curva Resultante"</b> para generar la curva unificada.`;
+            }
+        }
+
+        function handleCalculateClick() {
+            if (isCalculating) return;
+
+            const rawA = document.getElementById('inpA').value;
+            const rawB = document.getElementById('inpB').value;
+            const rowsA = parseInput(rawA);
+            const rowsB = parseInput(rawB);
+
+            if (rowsA.length < 2 || rowsB.length < 2) {
+                alert("Por favor, ingresa al menos 2 puntos de Inversión y Alcance tanto para el Medio A como para el Medio B (o usa los botones de Ejemplo).");
+                return;
+            }
+
+            isCalculating = true;
+            const btn = document.getElementById('btnCalculate');
+            const bar = document.getElementById('btnProgressBar');
+            const content = document.getElementById('btnContent');
+
+            btn.disabled = true;
+
+            const isFirstTime = !hasCalculatedFusion;
+            const durationMs = 3200;
+
+            // Iniciar barra de progreso en el botón (3.2s)
+            bar.style.transition = `width ${durationMs / 1000}s cubic-bezier(0.4, 0, 0.2, 1)`;
+            bar.style.width = '100%';
+
+            // Contenido en estado de carga en el botón
+            content.innerHTML = `
+                <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+                <span>${isFirstTime ? 'Analizando Curvas A + B...' : 'Recalculando Curva A + B...'}</span>
+            `;
+
+            // Animación en el área del gráfico (únicamente la primera vez)
+            if (isFirstTime) {
+                const phIcon = document.getElementById('chartPlaceholderIcon');
+                if (phIcon) {
+                    phIcon.className = "material-symbols-outlined text-3xl text-amber-600 animate-spin";
+                    phIcon.innerText = "progress_activity";
+                }
+                const phTitle = document.getElementById('chartPlaceholderTitle');
+                if (phTitle) phTitle.innerText = "Integración en Proceso";
+                const phSub = document.getElementById('chartPlaceholderSub');
+                if (phSub) {
+                    phSub.innerHTML = `<span class="text-amber-800 font-medium">El Agente está analizando las curvas...</span>`;
+                }
+            }
+
+            setTimeout(() => {
+                try {
+                    // Ejecutar cálculos reales de Media Science
+                    calculateFusion();
+
+                    // Ocultar placeholders
+                    const ph = document.getElementById('chartPlaceholder');
+                    if (ph) ph.classList.add('hidden');
+                    const phA = document.getElementById('phPreviewA');
+                    if (phA) phA.classList.add('hidden');
+                    const phB = document.getElementById('phPreviewB');
+                    if (phB) phB.classList.add('hidden');
+
+                    // Feedback visual de éxito en el botón
+                    content.innerHTML = `
+                        <span class="material-symbols-outlined text-lg">check_circle</span>
+                        <span>¡Curva A + B Generada!</span>
+                    `;
+
+                    // Mostrar notificación Toast
+                    showToast(`✓ Modelo ajustado con éxito &bull; Curva A (${rowsA.length} pts) | Curva B (${rowsB.length} pts)`);
+                } catch (err) {
+                    console.error("Error al calcular:", err);
+                    showToast(`⚠️ Error al calcular la curva: ${err.message || 'Verifica los datos'}`);
+                } finally {
+                    // Restaurar botón después de breve pausa de forma garantizada
+                    setTimeout(() => {
+                        bar.style.transition = 'none';
+                        bar.style.width = '0%';
+                        content.innerHTML = `
+                            <span class="material-symbols-outlined text-lg">merge_type</span> CALCULAR CURVA RESULTANTE
+                        `;
+                        btn.disabled = false;
+                        isCalculating = false;
+                    }, 800);
+                }
+            }, durationMs);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMsg');
+            if (!toast || !toastMsg) return;
+            toastMsg.innerHTML = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3500);
+        }
+
+        let isPreviewingA = false;
+        let isPreviewingB = false;
+
+        // Renderizado independiente de la Curva A al hacer clic en "Previsualizar" (1.3s de animación)
+        function handlePreviewA() {
+            if (isPreviewingA) return;
+            const rawA = document.getElementById('inpA').value;
+            const rowsA = parseInput(rawA);
+            if (rowsA.length < 2) {
+                alert("Por favor, ingresa al menos 2 puntos de Inversión y Alcance para el Medio A.");
+                return;
+            }
+
+            isPreviewingA = true;
+            const btn = document.getElementById('btnPreviewA');
+            const bar = document.getElementById('btnProgressA');
+            const content = document.getElementById('btnContentA');
+
+            btn.disabled = true;
+            bar.style.transition = 'width 1.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            bar.style.width = '100%';
+            content.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin">progress_activity</span> Generando...`;
+
+            setTimeout(() => {
+                try {
+                    fitModelA = fitHillCurve(rowsA);
+                    document.getElementById('ptsA').innerText = rowsA.length;
+
+                    let invA = parseFloat(document.getElementById('inpInvA').value);
+                    if (!isFinite(invA) || invA <= 0) {
+                        invA = 10000;
+                        document.getElementById('inpInvA').value = invA;
+                    }
+
+                    const reachA = predictReach(invA, fitModelA);
+                    document.getElementById('previewReachA').innerText = formatPct(reachA);
+                    document.getElementById('previewSubA').innerText = `Inversión: ${formatMoney(invA)}`;
+
+                    renderPreviewChartA(invA);
+                    showToast(`✓ Curva A generada (${rowsA.length} puntos)`);
+                } catch (err) {
+                    console.error("Error al previsualizar Curva A:", err);
+                    showToast(`⚠️ Error al previsualizar Curva A: ${err.message || 'Verifica los datos'}`);
+                } finally {
+                    setTimeout(() => {
+                        bar.style.transition = 'none';
+                        bar.style.width = '0%';
+                        content.innerHTML = `Previsualizar`;
+                        btn.disabled = false;
+                        isPreviewingA = false;
+                    }, 400);
+                }
+            }, 1300);
+        }
+
+        // Renderizado independiente de la Curva B al hacer clic en "Previsualizar" (1.3s de animación)
+        function handlePreviewB() {
+            if (isPreviewingB) return;
+            const rawB = document.getElementById('inpB').value;
+            const rowsB = parseInput(rawB);
+            if (rowsB.length < 2) {
+                alert("Por favor, ingresa al menos 2 puntos de Inversión y Alcance para el Medio B.");
+                return;
+            }
+
+            isPreviewingB = true;
+            const btn = document.getElementById('btnPreviewB');
+            const bar = document.getElementById('btnProgressB');
+            const content = document.getElementById('btnContentB');
+
+            btn.disabled = true;
+            bar.style.transition = 'width 1.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            bar.style.width = '100%';
+            content.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin">progress_activity</span> Generando...`;
+
+            setTimeout(() => {
+                try {
+                    fitModelB = fitHillCurve(rowsB);
+                    document.getElementById('ptsB').innerText = rowsB.length;
+
+                    let invB = parseFloat(document.getElementById('inpInvB').value);
+                    if (!isFinite(invB) || invB <= 0) {
+                        invB = 10000;
+                        document.getElementById('inpInvB').value = invB;
+                    }
+
+                    const reachB = predictReach(invB, fitModelB);
+                    document.getElementById('previewReachB').innerText = formatPct(reachB);
+                    document.getElementById('previewSubB').innerText = `Inversión: ${formatMoney(invB)}`;
+
+                    renderPreviewChartB(invB);
+                    showToast(`✓ Curva B generada (${rowsB.length} puntos)`);
+                } catch (err) {
+                    console.error("Error al previsualizar Curva B:", err);
+                    showToast(`⚠️ Error al previsualizar Curva B: ${err.message || 'Verifica los datos'}`);
+                } finally {
+                    setTimeout(() => {
+                        bar.style.transition = 'none';
+                        bar.style.width = '0%';
+                        content.innerHTML = `Previsualizar`;
+                        btn.disabled = false;
+                        isPreviewingB = false;
+                    }, 400);
+                }
+            }, 1300);
+        }
+
+        function calculateFusion() {
+            const rawA = document.getElementById('inpA').value;
+            const rawB = document.getElementById('inpB').value;
+
+            const rowsA = parseInput(rawA);
+            const rowsB = parseInput(rawB);
+
+            if (rowsA.length < 2 || rowsB.length < 2) return;
+
+            fitModelA = fitHillCurve(rowsA);
+            fitModelB = fitHillCurve(rowsB);
+
+            document.getElementById('ptsA').innerText = rowsA.length;
+            document.getElementById('ptsB').innerText = rowsB.length;
+
+            // Configurar límites de sliders
+            const maxInvestObserved = Math.max(fitModelA.xmax, fitModelB.xmax) * 1.5;
+            const slider = document.getElementById('simBudgetSlider');
+            slider.max = Math.round(maxInvestObserved);
+            slider.min = Math.round(maxInvestObserved * 0.02);
+            slider.step = Math.round(maxInvestObserved / 100);
+
+            const minLbl = document.getElementById('minSliderLbl');
+            if (minLbl) minLbl.innerText = formatMoney(slider.min);
+            const midLbl = document.getElementById('midSliderLbl');
+            if (midLbl) midLbl.innerText = formatMoney(maxInvestObserved / 2);
+            const maxLbl = document.getElementById('maxSliderLbl');
+            if (maxLbl) maxLbl.innerText = formatMoney(maxInvestObserved);
+
+            if (parseFloat(slider.value) > maxInvestObserved || parseFloat(slider.value) < slider.min) {
+                slider.value = Math.round(maxInvestObserved * 0.4);
+            }
+
+            // Activar cálculo de integración por primera vez
+            hasCalculatedFusion = true;
+
+            updateRealtimeSimulation();
+        }
+
+        // Control local de inversión manual en los cards de Medio A o Medio B
+        function handleManualInvChange(channel) {
+            if (channel === 'A' && fitModelA) {
+                const invA = parseFloat(document.getElementById('inpInvA').value) || 0;
+                const reachA = predictReach(invA, fitModelA);
+                document.getElementById('previewReachA').innerText = formatPct(reachA);
+                document.getElementById('previewSubA').innerText = `Inversión: ${formatMoney(invA)}`;
+                renderPreviewChartA(invA);
+            } else if (channel === 'B' && fitModelB) {
+                const invB = parseFloat(document.getElementById('inpInvB').value) || 0;
+                const reachB = predictReach(invB, fitModelB);
+                document.getElementById('previewReachB').innerText = formatPct(reachB);
+                document.getElementById('previewSubB').innerText = `Inversión: ${formatMoney(invB)}`;
+                renderPreviewChartB(invB);
+            }
+        }
+
+        function updateRealtimeSimulation() {
+            const slider = document.getElementById('simBudgetSlider');
+            const totalBudget = parseFloat(slider ? slider.value : 50000);
+            const splitSlider = document.getElementById('splitSlider');
+            const splitA = (parseFloat(splitSlider ? splitSlider.value : 50)) / 100;
+            const splitB = 1 - splitA;
+            const dupSlider = document.getElementById('dupFactor');
+            const dupFactor = parseFloat(dupSlider ? dupSlider.value : 1.0);
+
+            // Actualizar siempre las etiquetas visuales de los controles del panel de Parámetros
+            const budgetDisp = document.getElementById('simBudgetDisplay');
+            if (budgetDisp) budgetDisp.innerText = formatMoney(totalBudget);
+
+            const dupVal = document.getElementById('dupFactorVal');
+            if (dupVal) dupVal.innerText = `${dupFactor.toFixed(2)} (${dupFactor === 1 ? 'Estándar' : dupFactor < 1 ? 'Bajo Solape' : 'Alto Solape'})`;
+
+            const splitVal = document.getElementById('splitVal');
+            if (splitVal) splitVal.innerHTML = `<span class="text-sky-700 font-bold">${Math.round(splitA * 100)}% A</span> / <span class="text-emerald-700 font-bold">${Math.round(splitB * 100)}% B</span>`;
+
+            // Si aún no se ha presionado "Calcular Curva Resultante" por primera vez, no alterar resultados ni gráficos
+            if (!hasCalculatedFusion || !fitModelA || !fitModelB) return;
+
+            let invA, invB;
+            if (simMode === 'fixed') {
+                invA = totalBudget * splitA;
+                invB = totalBudget * splitB;
+            } else {
+                // Modo Óptimo (búsqueda de asignación que maximiza el alcance combinado para este presupuesto total)
+                let bestReach = -1;
+                let bestInvA = totalBudget * 0.5;
+                for (let s = 0; s <= 1.0; s += 0.02) {
+                    let testA = totalBudget * s;
+                    let testB = totalBudget * (1 - s);
+                    let rA = predictReach(testA, fitModelA);
+                    let rB = predictReach(testB, fitModelB);
+                    let comb = combineReach(rA, rB, dupFactor);
+                    if (comb > bestReach) {
+                        bestReach = comb;
+                        bestInvA = testA;
+                    }
+                }
+                invA = bestInvA;
+                invB = totalBudget - invA;
+            }
+
+            const reachA = predictReach(invA, fitModelA);
+            const reachB = predictReach(invB, fitModelB);
+            const reachFusion = combineReach(reachA, reachB, dupFactor);
+            const maxSolo = Math.max(reachA, reachB);
+            const incPure = Math.max(0, reachFusion - maxSolo);
+            const overlapPct = Math.max(0, reachA + reachB - reachFusion);
+
+            // Actualizar KPIs de Resultados (Columna Derecha)
+            document.getElementById('kpiFusionReach').innerText = formatPct(reachFusion);
+            document.getElementById('kpiReachA').innerText = formatPct(reachA);
+            document.getElementById('kpiInvA').innerText = `Inv: ${formatMoney(invA)}`;
+            document.getElementById('kpiReachB').innerText = formatPct(reachB);
+            document.getElementById('kpiInvB').innerText = `Inv: ${formatMoney(invB)}`;
+            document.getElementById('kpiIncReach').innerText = `+${incPure.toFixed(2)} pp`;
+            document.getElementById('kpiOverlap').innerText = formatPct(overlapPct);
+            document.getElementById('kpiTotalInv').innerText = formatMoney(totalBudget);
+            document.getElementById('kpiEfficiency').innerText = `${(reachFusion / (totalBudget / 1e6)).toFixed(1)} pp/MM`;
+
+            // Actualizar nombres en leyenda
+            const nameA = document.getElementById('nameA').value || 'Medio A';
+            const nameB = document.getElementById('nameB').value || 'Medio B';
+            document.getElementById('legendA').innerText = nameA;
+            document.getElementById('legendB').innerText = nameB;
+
+            // Renderizar Gráfico y Tabla
+            renderFusionChart(totalBudget, invA, invB, splitA, splitB, dupFactor, nameA, nameB);
+            renderTableAndRecommendation(totalBudget, invA, invB, reachA, reachB, splitA, splitB, dupFactor, reachFusion, incPure, overlapPct, nameA, nameB);
+        }
+
+        // Renderizado de Preview de Curva A (Solo Curva de Alcance maximizada)
+        function renderPreviewChartA(currentInv) {
+            if (!fitModelA) return;
+            const ph = document.getElementById('phPreviewA');
+            if (ph) ph.classList.add('hidden');
+
+            const steps = 60;
+            const maxInvest = parseFloat(document.getElementById('simBudgetSlider').max) || (fitModelA.xmax * 1.5);
+            let labels = [];
+            let cumulativeData = [];
+
+            for (let i = 0; i <= steps; i++) {
+                let x = (maxInvest / steps) * i;
+                labels.push(x);
+                let y = predictReach(x, fitModelA);
+                cumulativeData.push(y);
+            }
+
+            const ctx = document.getElementById('previewChartA').getContext('2d');
+
+            const markerPluginA = {
+                id: 'markerPluginA',
+                afterDraw: (chart) => {
+                    if (!chart.chartArea || !chart.scales.x) return;
+                    const invVal = (chart.options && chart.options.currentInv !== undefined) ? chart.options.currentInv : currentInv;
+                    const ctx2 = chart.ctx;
+                    const xPos = chart.scales.x.getPixelForValue(invVal);
+                    if (xPos >= chart.chartArea.left && xPos <= chart.chartArea.right) {
+                        ctx2.save();
+                        ctx2.beginPath();
+                        ctx2.setLineDash([4, 3]);
+                        ctx2.moveTo(xPos, chart.chartArea.top);
+                        ctx2.lineTo(xPos, chart.chartArea.bottom);
+                        ctx2.lineWidth = 1.8;
+                        ctx2.strokeStyle = '#0284c7';
+                        ctx2.stroke();
+
+                        ctx2.fillStyle = '#0284c7';
+                        ctx2.font = 'bold 9px Inter, sans-serif';
+                        ctx2.fillText(`$${Math.round(invVal).toLocaleString('en-US')}`, xPos + 4, chart.chartArea.top + 14);
+                        ctx2.restore();
+                    }
+                }
+            };
+
+            if (chartInstanceA) {
+                chartInstanceA.options.currentInv = currentInv;
+                chartInstanceA.data.labels = labels;
+                chartInstanceA.data.datasets[0].data = cumulativeData;
+                chartInstanceA.options.scales.x.max = maxInvest;
+                chartInstanceA.update();
+            } else {
+                chartInstanceA = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Alcance %',
+                                data: cumulativeData,
+                                borderColor: '#0284c7',
+                                backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                                borderWidth: 2.8,
+                                pointRadius: 0,
+                                fill: true,
+                                tension: 0.2
+                            }
+                        ]
+                    },
+                    options: {
+                        currentInv: currentInv,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                min: 0,
+                                max: maxInvest,
+                                ticks: {
+                                    callback: (v) => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v),
+                                    font: { size: 9, family: 'Inter' },
+                                    color: '#94a3b8',
+                                    maxTicksLimit: 5
+                                },
+                                grid: { color: 'rgba(0,0,0,0.03)' }
+                            },
+                            y: {
+                                type: 'linear',
+                                position: 'left',
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                    callback: (v) => v + '%',
+                                    font: { size: 9, family: 'Inter' },
+                                    color: '#94a3b8',
+                                    stepSize: 25
+                                },
+                                grid: { color: 'rgba(0,0,0,0.03)' }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleFont: { size: 11, family: 'Inter' },
+                                bodyFont: { size: 10, family: 'Inter' },
+                                padding: 8,
+                                callbacks: {
+                                    title: (items) => `Inversión: $${Math.round(items[0].parsed.x).toLocaleString('en-US')}`,
+                                    label: (item) => ` Alcance: ${item.parsed.y.toFixed(2)}%`
+                                }
+                            }
+                        }
+                    },
+                    plugins: [markerPluginA]
+                });
+            }
+        }
+
+        // Renderizado de Preview de Curva B (Solo Curva de Alcance maximizada)
+        function renderPreviewChartB(currentInv) {
+            if (!fitModelB) return;
+            const ph = document.getElementById('phPreviewB');
+            if (ph) ph.classList.add('hidden');
+
+            const steps = 60;
+            const maxInvest = parseFloat(document.getElementById('simBudgetSlider').max) || (fitModelB.xmax * 1.5);
+            let labels = [];
+            let cumulativeData = [];
+
+            for (let i = 0; i <= steps; i++) {
+                let x = (maxInvest / steps) * i;
+                labels.push(x);
+                let y = predictReach(x, fitModelB);
+                cumulativeData.push(y);
+            }
+
+            const ctx = document.getElementById('previewChartB').getContext('2d');
+
+            const markerPluginB = {
+                id: 'markerPluginB',
+                afterDraw: (chart) => {
+                    if (!chart.chartArea || !chart.scales.x) return;
+                    const invVal = (chart.options && chart.options.currentInv !== undefined) ? chart.options.currentInv : currentInv;
+                    const ctx2 = chart.ctx;
+                    const xPos = chart.scales.x.getPixelForValue(invVal);
+                    if (xPos >= chart.chartArea.left && xPos <= chart.chartArea.right) {
+                        ctx2.save();
+                        ctx2.beginPath();
+                        ctx2.setLineDash([4, 3]);
+                        ctx2.moveTo(xPos, chart.chartArea.top);
+                        ctx2.lineTo(xPos, chart.chartArea.bottom);
+                        ctx2.lineWidth = 1.8;
+                        ctx2.strokeStyle = '#059669';
+                        ctx2.stroke();
+
+                        ctx2.fillStyle = '#059669';
+                        ctx2.font = 'bold 9px Inter, sans-serif';
+                        ctx2.fillText(`$${Math.round(invVal).toLocaleString('en-US')}`, xPos + 4, chart.chartArea.top + 14);
+                        ctx2.restore();
+                    }
+                }
+            };
+
+            if (chartInstanceB) {
+                chartInstanceB.options.currentInv = currentInv;
+                chartInstanceB.data.labels = labels;
+                chartInstanceB.data.datasets[0].data = cumulativeData;
+                chartInstanceB.options.scales.x.max = maxInvest;
+                chartInstanceB.update();
+            } else {
+                chartInstanceB = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Alcance %',
+                                data: cumulativeData,
+                                borderColor: '#059669',
+                                backgroundColor: 'rgba(5, 150, 105, 0.08)',
+                                borderWidth: 2.8,
+                                pointRadius: 0,
+                                fill: true,
+                                tension: 0.2
+                            }
+                        ]
+                    },
+                    options: {
+                        currentInv: currentInv,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                min: 0,
+                                max: maxInvest,
+                                ticks: {
+                                    callback: (v) => '$' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v),
+                                    font: { size: 9, family: 'Inter' },
+                                    color: '#94a3b8',
+                                    maxTicksLimit: 5
+                                },
+                                grid: { color: 'rgba(0,0,0,0.03)' }
+                            },
+                            y: {
+                                type: 'linear',
+                                position: 'left',
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                    callback: (v) => v + '%',
+                                    font: { size: 9, family: 'Inter' },
+                                    color: '#94a3b8',
+                                    stepSize: 25
+                                },
+                                grid: { color: 'rgba(0,0,0,0.03)' }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleFont: { size: 11, family: 'Inter' },
+                                bodyFont: { size: 10, family: 'Inter' },
+                                padding: 8,
+                                callbacks: {
+                                    title: (items) => `Inversión: $${Math.round(items[0].parsed.x).toLocaleString('en-US')}`,
+                                    label: (item) => ` Alcance: ${item.parsed.y.toFixed(2)}%`
+                                }
+                            }
+                        }
+                    },
+                    plugins: [markerPluginB]
+                });
+            }
+        }
+
+        function renderFusionChart(currentTotalBudget, currentInvA, currentInvB, splitA, splitB, dupFactor, nameA, nameB) {
+            const steps = 60;
+            const maxInvest = parseFloat(document.getElementById('simBudgetSlider').max);
+
+            let labels = [];
+            let dataCurveA = [];
+            let dataCurveB = [];
+            let dataFusion = [];
+
+            for (let i = 0; i <= steps; i++) {
+                let xTotal = (maxInvest / steps) * i;
+                labels.push(xTotal);
+
+                let xA = xTotal * splitA;
+                let xB = xTotal * splitB;
+
+                let rA = predictReach(xA, fitModelA);
+                let rB = predictReach(xB, fitModelB);
+                let rComb = combineReach(rA, rB, dupFactor);
+
+                dataCurveA.push(rA);
+                dataCurveB.push(rB);
+                dataFusion.push(rComb);
+            }
+
+            const ctx = document.getElementById('fusionChart').getContext('2d');
+
+            if (chartInstance) {
+                chartInstance.options.customBudget = currentTotalBudget;
+                chartInstance.data.labels = labels;
+                chartInstance.data.datasets[0].label = `${nameA} (${Math.round(splitA * 100)}% Inv)`;
+                chartInstance.data.datasets[0].data = dataCurveA;
+                chartInstance.data.datasets[1].label = `${nameB} (${Math.round(splitB * 100)}% Inv)`;
+                chartInstance.data.datasets[1].data = dataCurveB;
+                chartInstance.data.datasets[2].data = dataFusion;
+                chartInstance.options.scales.x.max = maxInvest;
+                chartInstance.update();
+            } else {
+                const budgetMarkerPlugin = {
+                    id: 'budgetMarker',
+                    afterDraw: (chart) => {
+                        if (!chart.chartArea || !chart.scales.x) return;
+                        const budget = (chart.options && chart.options.customBudget !== undefined) ? chart.options.customBudget : currentTotalBudget;
+                        const ctx2 = chart.ctx;
+                        const xAxis = chart.scales.x;
+                        const currentX = xAxis.getPixelForValue(budget);
+
+                        if (currentX >= chart.chartArea.left && currentX <= chart.chartArea.right) {
+                            ctx2.save();
+                            ctx2.beginPath();
+                            ctx2.setLineDash([5, 4]);
+                            ctx2.moveTo(currentX, chart.chartArea.top);
+                            ctx2.lineTo(currentX, chart.chartArea.bottom);
+                            ctx2.lineWidth = 2;
+                            ctx2.strokeStyle = '#d97706';
+                            ctx2.stroke();
+
+                            ctx2.fillStyle = '#d97706';
+                            ctx2.font = 'bold 11px Inter, sans-serif';
+                            ctx2.fillText(`Inversión Evaluada: ${formatMoney(budget)}`, currentX + 6, chart.chartArea.top + 20);
+                            ctx2.restore();
+                        }
+                    }
+                };
+
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: `${nameA}`,
+                                data: dataCurveA,
+                                borderColor: '#0284c7', // Sky blue 600
+                                backgroundColor: 'rgba(2, 132, 199, 0.05)',
+                                borderWidth: 2.2,
+                                borderDash: [4, 4],
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0.2
+                            },
+                            {
+                                label: `${nameB}`,
+                                data: dataCurveB,
+                                borderColor: '#059669', // Emerald 600
+                                backgroundColor: 'rgba(5, 150, 105, 0.05)',
+                                borderWidth: 2.2,
+                                borderDash: [4, 4],
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0.2
+                            },
+                            {
+                                label: 'Curva Integración Resultante (A+B)',
+                                data: dataFusion,
+                                borderColor: '#d97706', // Amber 600 de alto impacto
+                                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                                borderWidth: 3.5,
+                                pointRadius: 0,
+                                fill: true,
+                                tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        customBudget: currentTotalBudget,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                min: 0,
+                                max: maxInvest,
+                                ticks: {
+                                    callback: (v) => '$' + Math.round(v).toLocaleString('en-US'),
+                                    font: { size: 10, family: 'Inter' },
+                                    color: '#64748b'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Inversión Total Combinada (USD)',
+                                    color: '#334155',
+                                    font: { weight: '600', size: 11, family: 'Inter' }
+                                },
+                                grid: { color: 'rgba(0, 0, 0, 0.04)' }
+                            },
+                            y: {
+                                type: 'linear',
+                                min: 0,
+                                max: 100,
+                                ticks: {
+                                    callback: (v) => v + '%',
+                                    font: { size: 10, family: 'Inter' },
+                                    color: '#64748b'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Alcance % (Reach 1+)',
+                                    color: '#334155',
+                                    font: { weight: '600', size: 11, family: 'Inter' }
+                                },
+                                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 14,
+                                    font: { size: 11, weight: '600', family: 'Inter' },
+                                    color: '#1e293b'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: '#0f172a',
+                                titleFont: { size: 12, weight: 'bold', family: 'Inter' },
+                                bodyFont: { size: 11, family: 'Inter' },
+                                padding: 10,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    title: (items) => `Inversión Total: $${Math.round(items[0].parsed.x).toLocaleString('en-US')}`,
+                                    label: (item) => ` ${item.dataset.label}: ${item.parsed.y.toFixed(2)}%`
+                                }
+                            }
+                        }
+                    },
+                    plugins: [budgetMarkerPlugin]
+                });
+            }
+        }
+
+        function renderTableAndRecommendation(totalBudget, invA, invB, reachA, reachB, splitA, splitB, dupFactor, reachFusion, incPure, overlapPct, nameA, nameB) {
+            const steps = 25;
+            const maxInvest = parseFloat(document.getElementById('simBudgetSlider').max);
+            const tbody = document.getElementById('tblBody');
+            tbody.innerHTML = '';
+            tableDataCache = [];
+
+            let prevReach = 0;
+
+            for (let i = 1; i <= steps; i++) {
+                let xTotal = (maxInvest / steps) * i;
+                let xA = xTotal * splitA;
+                let xB = xTotal * splitB;
+
+                let rA = predictReach(xA, fitModelA);
+                let rB = predictReach(xB, fitModelB);
+                let rComb = combineReach(rA, rB, dupFactor);
+
+                let dInv = i === 1 ? xTotal : (maxInvest / steps);
+                let dReach = rComb - prevReach;
+                let ppMM = dInv > 0 ? (dReach / (dInv / 1e6)) : 0;
+                prevReach = rComb;
+
+                let maxSingle = Math.max(rA, rB);
+                let incPureStep = Math.max(0, rComb - maxSingle);
+
+                // Determinar zona de eficiencia
+                let zoneBadge = '';
+                if (rComb < 35) {
+                    zoneBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Alta Eficiencia</span>';
+                } else if (rComb < 60) {
+                    zoneBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">Crecimiento Sostenido</span>';
+                } else {
+                    zoneBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">Saturación Marginal</span>';
+                }
+
+                // Resaltar fila más cercana a la inversión evaluada
+                const isSelected = Math.abs(xTotal - totalBudget) <= (maxInvest / steps) * 0.5;
+                const rowClass = isSelected ? 'bg-amber-50/90 font-bold border-l-4 border-amber-500 text-slate-950' : 'hover:bg-slate-50 transition';
+
+                tableDataCache.push({
+                    punto: i,
+                    inversionTotal: Math.round(xTotal),
+                    inversionA: Math.round(xA),
+                    inversionB: Math.round(xB),
+                    alcanceA: rA.toFixed(2),
+                    alcanceB: rB.toFixed(2),
+                    alcanceFusion: rComb.toFixed(2),
+                    incrementoPuro: incPureStep.toFixed(2),
+                    ppMM: ppMM.toFixed(1)
+                });
+
+                tbody.innerHTML += `
+                    <tr class="${rowClass}">
+                        <td class="px-4 py-2.5 text-left font-semibold text-slate-500 font-sans">${i}</td>
+                        <td class="px-4 py-2.5 font-bold text-slate-900">${formatMoney(xTotal)}</td>
+                        <td class="px-4 py-2.5 text-sky-700">${formatMoney(xA)}</td>
+                        <td class="px-4 py-2.5 text-emerald-700">${formatMoney(xB)}</td>
+                        <td class="px-4 py-2.5 text-sky-800">${rA.toFixed(2)}%</td>
+                        <td class="px-4 py-2.5 text-emerald-800">${rB.toFixed(2)}%</td>
+                        <td class="px-4 py-2.5 font-extrabold text-amber-700 bg-amber-100/40">${rComb.toFixed(2)}%</td>
+                        <td class="px-4 py-2.5 font-semibold text-emerald-700">+${incPureStep.toFixed(2)} pp</td>
+                        <td class="px-4 py-2.5 text-slate-600">${ppMM.toFixed(1)}</td>
+                        <td class="px-4 py-2.5 text-center font-sans">${zoneBadge}</td>
+                    </tr>
+                `;
+            }
+
+            // Actualizar caja de recomendación
+            const betterChannel = reachA >= reachB ? nameA : nameB;
+            const betterReach = Math.max(reachA, reachB);
+            document.getElementById('execRecommendation').innerHTML = `
+                <div class="space-y-2">
+                    <p>
+                        Para un presupuesto total de <b>${formatMoney(totalBudget)}</b>, la combinación estratégica de <b>${nameA}</b> (${Math.round(splitA * 100)}%) y <b>${nameB}</b> (${Math.round(splitB * 100)}%) alcanza una cobertura neta de <b class="text-amber-800 text-base font-bold">${reachFusion.toFixed(2)}%</b>.
+                    </p>
+                    <p>
+                        💡 <b>Sinergia Multimedio:</b> La unión de ambos medios genera un <b class="text-emerald-700 font-bold">+${incPure.toFixed(2)} puntos porcentuales de alcance incremental</b> en comparación a invertir todo en el medio líder individual (<i>${betterChannel}</i> que lograría ${betterReach.toFixed(2)}%).
+                    </p>
+                    <p>
+                        🎯 <b>Diagnóstico de Saturación:</b> El solapamiento de audiencias es del <b>${overlapPct.toFixed(2)}%</b> con un factor de duplicación de <b>${dupFactor.toFixed(2)}</b>. 
+                        ${reachFusion > 60 ? 'Se observa desaceleración en la curva combinada; considera optimizar el mix hacia el medio con menor saturación.' : 'La combinación se encuentra en una zona de alta eficiencia y rápido crecimiento de cobertura.'}
+                    </p>
+                </div>
+            `;
+        }
+
+        function exportToExcel() {
+            if (!tableDataCache || tableDataCache.length === 0) {
+                alert("No hay datos simulados para exportar.");
+                return;
+            }
+            const nameA = document.getElementById('nameA').value || 'Medio A';
+            const nameB = document.getElementById('nameB').value || 'Medio B';
+
+            const headers = [
+                ["Punto Simulación", "Inversión Total (USD)", `Inversión ${nameA} (USD)`, `Inversión ${nameB} (USD)`, `Alcance ${nameA} (%)`, `Alcance ${nameB} (%)`, "Alcance Integración (A+B) (%)", "Incremento Neto vs Max (pp)", "Eficiencia pp/MM"]
+            ];
+
+            const rows = tableDataCache.map(r => [
+                r.punto, r.inversionTotal, r.inversionA, r.inversionB, r.alcanceA, r.alcanceB, r.alcanceFusion, r.incrementoPuro, r.ppMM
+            ]);
+
+            const ws = XLSX.utils.aoa_to_sheet([...headers, ...rows]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Reach_Dynamics");
+            XLSX.writeFile(wb, "Reach_Dynamics_Curvas_Alcance.xlsx");
+        }
+
+        function exportToCSV() {
+            if (!tableDataCache || tableDataCache.length === 0) {
+                alert("No hay datos simulados para exportar.");
+                return;
+            }
+            let csv = "Punto,Inversion_Total,Inversion_A,Inversion_B,Alcance_A_Pct,Alcance_B_Pct,Alcance_Fusion_Pct,Incremento_Neto_pp,pp_MM\n";
+            tableDataCache.forEach(r => {
+                csv += `${r.punto},${r.inversionTotal},${r.inversionA},${r.inversionB},${r.alcanceA},${r.alcanceB},${r.alcanceFusion},${r.incrementoPuro},${r.ppMM}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute("download", "Reach_Dynamics_Curvas_Fusion.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Listeners interactivos
+        window.onload = function () {
+            document.getElementById('simBudgetSlider').addEventListener('input', updateRealtimeSimulation);
+            document.getElementById('splitSlider').addEventListener('input', updateRealtimeSimulation);
+            document.getElementById('dupFactor').addEventListener('input', updateRealtimeSimulation);
+
+            // Estado inicial: El módulo permanece en espera hasta que se presione "Calcular Curva Resultante" o "Cargar Demo"
+        };
+    </script>
+
+    <!-- Notificación Toast Flotante -->
+    <div id="toastNotification"
+        class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div
+            class="bg-slate-900/95 backdrop-blur-sm text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-3 text-xs">
+            <span class="material-symbols-outlined text-emerald-400 text-lg">verified</span>
+            <span id="toastMsg" class="font-medium text-slate-200"></span>
+        </div>
+    </div>
+</body>
+
+</html>
