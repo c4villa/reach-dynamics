@@ -194,6 +194,7 @@
                                     Pega: <b class="text-slate-900">Inversión</b> y <b class="text-slate-900">Alcance
                                         %</b>
                                 </label>
+                                <p class="text-[9px] text-slate-500 mb-1">Ingresa el alcance en puntos porcentuales: 1 o 1% significa 1%.</p>
                                 <textarea id="inpA"
                                     placeholder="Inversión&#9;Alcance %&#10;5000&#9;12.5%&#10;10000&#9;22.8%&#10;..."
                                     class="w-full h-36 bg-slate-50 text-slate-800 border border-slate-200 rounded-lg p-2 text-[10px] font-mono focus:outline-none focus:border-sky-500 focus:bg-white custom-scrollbar mb-2.5 transition"></textarea>
@@ -309,6 +310,7 @@
                                     Pega: <b class="text-slate-900">Inversión</b> y <b class="text-slate-900">Alcance
                                         %</b>
                                 </label>
+                                <p class="text-[9px] text-slate-500 mb-1">Ingresa el alcance en puntos porcentuales: 1 o 1% significa 1%.</p>
                                 <textarea id="inpB"
                                     placeholder="Inversión&#9;Alcance %&#10;8000&#9;15.2%&#10;16000&#9;26.4%&#10;..."
                                     class="w-full h-36 bg-slate-50 text-slate-800 border border-slate-200 rounded-lg p-2 text-[10px] font-mono focus:outline-none focus:border-emerald-500 focus:bg-white custom-scrollbar mb-2.5 transition"></textarea>
@@ -473,7 +475,7 @@
                             </span>
                         </div>
                         <input type="range" id="splitSlider" min="5" max="95" step="5" value="50"
-                            class="w-full h-2 bg-amber-200/60 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                            title="Se utiliza en el modo Split Fijo" class="w-full h-2 bg-amber-200/60 rounded-lg appearance-none cursor-pointer accent-amber-600 disabled:opacity-40 disabled:cursor-not-allowed">
                         <div class="flex justify-between text-[8.5px] text-slate-500 mt-1 font-medium">
                             <span class="text-sky-700 font-semibold">95% A</span>
                             <span class="text-slate-600 font-medium">50/50</span>
@@ -583,10 +585,9 @@
 
                     <div
                         class="bg-white border border-emerald-200/80 p-3 rounded-xl flex flex-col justify-between shadow-xs hover:shadow-sm transition">
-                        <span class="text-[9px] text-emerald-800 uppercase font-bold tracking-wider leading-tight">+Δ
-                            Incremento Puro</span>
+                        <span class="text-[9px] text-emerald-800 uppercase font-bold tracking-wider leading-tight">Δ Alcance vs mejor medio</span>
                         <p id="kpiIncReach" class="text-xl font-extrabold text-emerald-600 mt-1">+0.00 pp</p>
-                        <span class="text-[9px] text-slate-500 mt-0.5 leading-none">vs. Mejor Medio Solo</span>
+                        <span class="text-[9px] text-slate-500 mt-0.5 leading-none">Con el presupuesto total</span>
                     </div>
 
                     <div
@@ -715,7 +716,7 @@
                             <th class="px-4 py-3 text-right text-sky-400">Alcance Medio A %</th>
                             <th class="px-4 py-3 text-right text-emerald-400">Alcance Medio B %</th>
                             <th class="px-4 py-3 text-right text-amber-400 font-bold">Alcance Integración (A+B) %</th>
-                            <th class="px-4 py-3 text-right text-emerald-400">+Δ Inc. vs Max</th>
+                            <th class="px-4 py-3 text-right text-emerald-400">Δ vs mejor medio con presupuesto total</th>
                             <th class="px-4 py-3 text-right">pp/MM Marginal</th>
                             <th class="px-4 py-3 text-center">Zona Eficiencia</th>
                         </tr>
@@ -791,8 +792,14 @@
         const formatMoney = (v) => isFinite(v) ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
         const formatPct = (v, d = 2) => isFinite(v) ? v.toFixed(d) + '%' : '0.00%';
         const cleanNum = (v) => {
-            let s = String(v ?? '').trim().replace(/%/g, '').replace(/,/g, '');
-            return parseFloat(s);
+            const s = String(v ?? '').trim().replace(/,/g, '');
+            return /^\d+(?:\.\d+)?$/.test(s) ? Number(s) : NaN;
+        };
+
+        const cleanReach = (v) => {
+            // Todos los valores se interpretan como puntos porcentuales; el signo % es opcional.
+            const s = String(v ?? '').trim().replace(/%$/, '').trim();
+            return cleanNum(s);
         };
 
         function parseInput(text) {
@@ -803,14 +810,20 @@
             for (let i = start; i < lines.length; i++) {
                 let p = lines[i].split(/\t|;/);
                 if (p.length < 2) p = lines[i].split(',');
-                let inv = cleanNum(p[0]);
-                let reach = cleanNum(p[1]);
-                if (isFinite(inv) && isFinite(reach) && inv > 0) {
-                    if (reach <= 1 && reach > 0) reach *= 100;
-                    out.push({ inv, reach });
+                const inv = cleanNum(p[0]);
+                const reach = cleanReach(p[1]);
+                if (!isFinite(inv) || inv <= 0 || !isFinite(reach) || reach < 0 || reach > 100) {
+                    throw new Error(`Datos inválidos en la fila ${i + 1}. La inversión debe ser positiva y el alcance debe estar entre 0% y 100%.`);
                 }
+                out.push({ inv, reach });
             }
             return out.sort((a, b) => a.inv - b.inv);
+        }
+
+        function validateCurveRows(rows) {
+            if (rows.length >= 2 && rows[0].inv === rows[rows.length - 1].inv) {
+                throw new Error('Usa al menos dos valores de inversión diferentes para ajustar una curva.');
+            }
         }
 
         // Ajuste de curva Hill / S-Curve: R(x) = A * x^n / (k^n + x^n)
@@ -819,6 +832,9 @@
             let xs = rows.map(r => r.inv);
             let ys = rows.map(r => r.reach);
             let xmin = Math.min(...xs), xmax = Math.max(...xs), ymax = Math.max(...ys);
+            if (xmin === xmax) {
+                throw new Error('Usa al menos dos valores de inversión diferentes para ajustar una curva.');
+            }
 
             let best = { sse: 1e99, A: ymax, n: 1, k: xmin, r2: 0, xmax, ymax };
 
@@ -917,6 +933,7 @@
         }
 
         function clearAllData() {
+            tableDataCache = [];
             document.getElementById('inpA').value = '';
             document.getElementById('inpB').value = '';
             document.getElementById('ptsA').innerText = '0';
@@ -971,6 +988,7 @@
 
         function setMode(mode) {
             simMode = mode;
+            document.getElementById('splitSlider').disabled = mode === 'optimal';
             const btnFixed = document.getElementById('btnModeFixed');
             const btnOpt = document.getElementById('btnModeOptimal');
             if (mode === 'fixed') {
@@ -1004,8 +1022,16 @@
 
             const rawA = document.getElementById('inpA').value;
             const rawB = document.getElementById('inpB').value;
-            const rowsA = parseInput(rawA);
-            const rowsB = parseInput(rawB);
+            let rowsA, rowsB;
+            try {
+                rowsA = parseInput(rawA);
+                rowsB = parseInput(rawB);
+                validateCurveRows(rowsA);
+                validateCurveRows(rowsB);
+            } catch (err) {
+                alert(err.message);
+                return;
+            }
 
             if (rowsA.length < 2 || rowsB.length < 2) {
                 alert("Por favor, ingresa al menos 2 puntos de Inversión y Alcance tanto para el Medio A como para el Medio B (o usa los botones de Ejemplo).");
@@ -1104,7 +1130,14 @@
         function handlePreviewA() {
             if (isPreviewingA) return;
             const rawA = document.getElementById('inpA').value;
-            const rowsA = parseInput(rawA);
+            let rowsA;
+            try {
+                rowsA = parseInput(rawA);
+                validateCurveRows(rowsA);
+            } catch (err) {
+                alert(err.message);
+                return;
+            }
             if (rowsA.length < 2) {
                 alert("Por favor, ingresa al menos 2 puntos de Inversión y Alcance para el Medio A.");
                 return;
@@ -1156,7 +1189,14 @@
         function handlePreviewB() {
             if (isPreviewingB) return;
             const rawB = document.getElementById('inpB').value;
-            const rowsB = parseInput(rawB);
+            let rowsB;
+            try {
+                rowsB = parseInput(rawB);
+                validateCurveRows(rowsB);
+            } catch (err) {
+                alert(err.message);
+                return;
+            }
             if (rowsB.length < 2) {
                 alert("Por favor, ingresa al menos 2 puntos de Inversión y Alcance para el Medio B.");
                 return;
@@ -1260,12 +1300,29 @@
             }
         }
 
+        function allocationForBudget(totalBudget, fixedSplitA, dupFactor) {
+            if (simMode === 'fixed') {
+                return { invA: totalBudget * fixedSplitA, invB: totalBudget * (1 - fixedSplitA) };
+            }
+            let bestReach = -1;
+            let bestInvA = 0;
+            for (let i = 0; i <= 50; i++) {
+                const testA = totalBudget * i / 50;
+                const testB = totalBudget - testA;
+                const reach = combineReach(predictReach(testA, fitModelA), predictReach(testB, fitModelB), dupFactor);
+                if (reach > bestReach) {
+                    bestReach = reach;
+                    bestInvA = testA;
+                }
+            }
+            return { invA: bestInvA, invB: totalBudget - bestInvA };
+        }
+
         function updateRealtimeSimulation() {
             const slider = document.getElementById('simBudgetSlider');
             const totalBudget = parseFloat(slider ? slider.value : 50000);
             const splitSlider = document.getElementById('splitSlider');
-            const splitA = (parseFloat(splitSlider ? splitSlider.value : 50)) / 100;
-            const splitB = 1 - splitA;
+            const fixedSplitA = (parseFloat(splitSlider ? splitSlider.value : 50)) / 100;
             const dupSlider = document.getElementById('dupFactor');
             const dupFactor = parseFloat(dupSlider ? dupSlider.value : 1.0);
 
@@ -1277,39 +1334,23 @@
             if (dupVal) dupVal.innerText = `${dupFactor.toFixed(2)} (${dupFactor === 1 ? 'Estándar' : dupFactor < 1 ? 'Bajo Solape' : 'Alto Solape'})`;
 
             const splitVal = document.getElementById('splitVal');
-            if (splitVal) splitVal.innerHTML = `<span class="text-sky-700 font-bold">${Math.round(splitA * 100)}% A</span> / <span class="text-emerald-700 font-bold">${Math.round(splitB * 100)}% B</span>`;
+            if (splitVal) splitVal.innerHTML = `<span class="text-sky-700 font-bold">${Math.round(fixedSplitA * 100)}% A</span> / <span class="text-emerald-700 font-bold">${Math.round((1 - fixedSplitA) * 100)}% B</span>`;
 
             // Si aún no se ha presionado "Calcular Curva Resultante" por primera vez, no alterar resultados ni gráficos
             if (!hasCalculatedFusion || !fitModelA || !fitModelB) return;
 
-            let invA, invB;
-            if (simMode === 'fixed') {
-                invA = totalBudget * splitA;
-                invB = totalBudget * splitB;
-            } else {
-                // Modo Óptimo (búsqueda de asignación que maximiza el alcance combinado para este presupuesto total)
-                let bestReach = -1;
-                let bestInvA = totalBudget * 0.5;
-                for (let s = 0; s <= 1.0; s += 0.02) {
-                    let testA = totalBudget * s;
-                    let testB = totalBudget * (1 - s);
-                    let rA = predictReach(testA, fitModelA);
-                    let rB = predictReach(testB, fitModelB);
-                    let comb = combineReach(rA, rB, dupFactor);
-                    if (comb > bestReach) {
-                        bestReach = comb;
-                        bestInvA = testA;
-                    }
-                }
-                invA = bestInvA;
-                invB = totalBudget - invA;
+            const { invA, invB } = allocationForBudget(totalBudget, fixedSplitA, dupFactor);
+            const splitA = invA / totalBudget;
+            const splitB = invB / totalBudget;
+            if (splitVal && simMode === 'optimal') {
+                splitVal.innerHTML = `<span class="text-sky-700 font-bold">${Math.round(splitA * 100)}% A</span> / <span class="text-emerald-700 font-bold">${Math.round(splitB * 100)}% B</span>`;
             }
 
             const reachA = predictReach(invA, fitModelA);
             const reachB = predictReach(invB, fitModelB);
             const reachFusion = combineReach(reachA, reachB, dupFactor);
-            const maxSolo = Math.max(reachA, reachB);
-            const incPure = Math.max(0, reachFusion - maxSolo);
+            const bestSoloReach = Math.max(predictReach(totalBudget, fitModelA), predictReach(totalBudget, fitModelB));
+            const incPure = reachFusion - bestSoloReach;
             const overlapPct = Math.max(0, reachA + reachB - reachFusion);
 
             // Actualizar KPIs de Resultados (Columna Derecha)
@@ -1318,7 +1359,7 @@
             document.getElementById('kpiInvA').innerText = `Inv: ${formatMoney(invA)}`;
             document.getElementById('kpiReachB').innerText = formatPct(reachB);
             document.getElementById('kpiInvB').innerText = `Inv: ${formatMoney(invB)}`;
-            document.getElementById('kpiIncReach').innerText = `+${incPure.toFixed(2)} pp`;
+            document.getElementById('kpiIncReach').innerText = `${incPure >= 0 ? '+' : ''}${incPure.toFixed(2)} pp`;
             document.getElementById('kpiOverlap').innerText = formatPct(overlapPct);
             document.getElementById('kpiTotalInv').innerText = formatMoney(totalBudget);
             document.getElementById('kpiEfficiency').innerText = `${(reachFusion / (totalBudget / 1e6)).toFixed(1)} pp/MM`;
@@ -1330,8 +1371,8 @@
             document.getElementById('legendB').innerText = nameB;
 
             // Renderizar Gráfico y Tabla
-            renderFusionChart(totalBudget, invA, invB, splitA, splitB, dupFactor, nameA, nameB);
-            renderTableAndRecommendation(totalBudget, invA, invB, reachA, reachB, splitA, splitB, dupFactor, reachFusion, incPure, overlapPct, nameA, nameB);
+            renderFusionChart(totalBudget, fixedSplitA, dupFactor, nameA, nameB);
+            renderTableAndRecommendation(totalBudget, fixedSplitA, dupFactor, reachFusion, incPure, overlapPct, nameA, nameB);
         }
 
         // Renderizado de Preview de Curva A (Solo Curva de Alcance maximizada)
@@ -1578,7 +1619,7 @@
             }
         }
 
-        function renderFusionChart(currentTotalBudget, currentInvA, currentInvB, splitA, splitB, dupFactor, nameA, nameB) {
+        function renderFusionChart(currentTotalBudget, fixedSplitA, dupFactor, nameA, nameB) {
             const steps = 60;
             const maxInvest = parseFloat(document.getElementById('simBudgetSlider').max);
 
@@ -1591,8 +1632,7 @@
                 let xTotal = (maxInvest / steps) * i;
                 labels.push(xTotal);
 
-                let xA = xTotal * splitA;
-                let xB = xTotal * splitB;
+                const { invA: xA, invB: xB } = allocationForBudget(xTotal, fixedSplitA, dupFactor);
 
                 let rA = predictReach(xA, fitModelA);
                 let rB = predictReach(xB, fitModelB);
@@ -1608,9 +1648,9 @@
             if (chartInstance) {
                 chartInstance.options.customBudget = currentTotalBudget;
                 chartInstance.data.labels = labels;
-                chartInstance.data.datasets[0].label = `${nameA} (${Math.round(splitA * 100)}% Inv)`;
+                chartInstance.data.datasets[0].label = `${nameA} (${simMode === 'optimal' ? 'asignación óptima' : Math.round(fixedSplitA * 100) + '% Inv'})`;
                 chartInstance.data.datasets[0].data = dataCurveA;
-                chartInstance.data.datasets[1].label = `${nameB} (${Math.round(splitB * 100)}% Inv)`;
+                chartInstance.data.datasets[1].label = `${nameB} (${simMode === 'optimal' ? 'asignación óptima' : Math.round((1 - fixedSplitA) * 100) + '% Inv'})`;
                 chartInstance.data.datasets[1].data = dataCurveB;
                 chartInstance.data.datasets[2].data = dataFusion;
                 chartInstance.options.scales.x.max = maxInvest;
@@ -1649,7 +1689,7 @@
                         labels: labels,
                         datasets: [
                             {
-                                label: `${nameA}`,
+                                label: `${nameA} (${simMode === 'optimal' ? 'asignación óptima' : Math.round(fixedSplitA * 100) + '% Inv'})`,
                                 data: dataCurveA,
                                 borderColor: '#0284c7', // Sky blue 600
                                 backgroundColor: 'rgba(2, 132, 199, 0.05)',
@@ -1660,7 +1700,7 @@
                                 tension: 0.2
                             },
                             {
-                                label: `${nameB}`,
+                                label: `${nameB} (${simMode === 'optimal' ? 'asignación óptima' : Math.round((1 - fixedSplitA) * 100) + '% Inv'})`,
                                 data: dataCurveB,
                                 borderColor: '#059669', // Emerald 600
                                 backgroundColor: 'rgba(5, 150, 105, 0.05)',
@@ -1753,7 +1793,7 @@
             }
         }
 
-        function renderTableAndRecommendation(totalBudget, invA, invB, reachA, reachB, splitA, splitB, dupFactor, reachFusion, incPure, overlapPct, nameA, nameB) {
+        function renderTableAndRecommendation(totalBudget, fixedSplitA, dupFactor, reachFusion, incPure, overlapPct, nameA, nameB) {
             const steps = 25;
             const maxInvest = parseFloat(document.getElementById('simBudgetSlider').max);
             const tbody = document.getElementById('tblBody');
@@ -1764,8 +1804,7 @@
 
             for (let i = 1; i <= steps; i++) {
                 let xTotal = (maxInvest / steps) * i;
-                let xA = xTotal * splitA;
-                let xB = xTotal * splitB;
+                const { invA: xA, invB: xB } = allocationForBudget(xTotal, fixedSplitA, dupFactor);
 
                 let rA = predictReach(xA, fitModelA);
                 let rB = predictReach(xB, fitModelB);
@@ -1776,8 +1815,8 @@
                 let ppMM = dInv > 0 ? (dReach / (dInv / 1e6)) : 0;
                 prevReach = rComb;
 
-                let maxSingle = Math.max(rA, rB);
-                let incPureStep = Math.max(0, rComb - maxSingle);
+                let maxSingle = Math.max(predictReach(xTotal, fitModelA), predictReach(xTotal, fitModelB));
+                let incPureStep = rComb - maxSingle;
 
                 // Determinar zona de eficiencia
                 let zoneBadge = '';
@@ -1814,7 +1853,7 @@
                         <td class="px-4 py-2.5 text-sky-800">${rA.toFixed(2)}%</td>
                         <td class="px-4 py-2.5 text-emerald-800">${rB.toFixed(2)}%</td>
                         <td class="px-4 py-2.5 font-extrabold text-amber-700 bg-amber-100/40">${rComb.toFixed(2)}%</td>
-                        <td class="px-4 py-2.5 font-semibold text-emerald-700">+${incPureStep.toFixed(2)} pp</td>
+                        <td class="px-4 py-2.5 font-semibold text-emerald-700">${incPureStep >= 0 ? '+' : ''}${incPureStep.toFixed(2)} pp</td>
                         <td class="px-4 py-2.5 text-slate-600">${ppMM.toFixed(1)}</td>
                         <td class="px-4 py-2.5 text-center font-sans">${zoneBadge}</td>
                     </tr>
@@ -1822,15 +1861,23 @@
             }
 
             // Actualizar caja de recomendación
-            const betterChannel = reachA >= reachB ? nameA : nameB;
-            const betterReach = Math.max(reachA, reachB);
+            const soloReachA = predictReach(totalBudget, fitModelA);
+            const soloReachB = predictReach(totalBudget, fitModelB);
+            const betterChannel = soloReachA >= soloReachB ? nameA : nameB;
+            const betterReach = Math.max(soloReachA, soloReachB);
+            const { invA, invB } = allocationForBudget(totalBudget, fixedSplitA, dupFactor);
+            const splitA = invA / totalBudget;
+            const splitB = invB / totalBudget;
+            const comparison = incPure >= 0
+                ? `genera <b class="text-emerald-700 font-bold">+${incPure.toFixed(2)} puntos porcentuales</b> de alcance incremental`
+                : `presenta una diferencia de <b class="text-rose-700 font-bold">${incPure.toFixed(2)} puntos porcentuales</b> de alcance`;
             document.getElementById('execRecommendation').innerHTML = `
                 <div class="space-y-2">
                     <p>
                         Para un presupuesto total de <b>${formatMoney(totalBudget)}</b>, la combinación estratégica de <b>${nameA}</b> (${Math.round(splitA * 100)}%) y <b>${nameB}</b> (${Math.round(splitB * 100)}%) alcanza una cobertura neta de <b class="text-amber-800 text-base font-bold">${reachFusion.toFixed(2)}%</b>.
                     </p>
                     <p>
-                        💡 <b>Sinergia Multimedio:</b> La unión de ambos medios genera un <b class="text-emerald-700 font-bold">+${incPure.toFixed(2)} puntos porcentuales de alcance incremental</b> en comparación a invertir todo en el medio líder individual (<i>${betterChannel}</i> que lograría ${betterReach.toFixed(2)}%).
+                        💡 <b>Comparación Multimedio:</b> La unión de ambos medios ${comparison} frente a invertir el 100% del presupuesto en el mejor medio individual (<i>${betterChannel}</i>, que lograría ${betterReach.toFixed(2)}%).
                     </p>
                     <p>
                         🎯 <b>Diagnóstico de Saturación:</b> El solapamiento de audiencias es del <b>${overlapPct.toFixed(2)}%</b> con un factor de duplicación de <b>${dupFactor.toFixed(2)}</b>. 
@@ -1849,7 +1896,7 @@
             const nameB = document.getElementById('nameB').value || 'Medio B';
 
             const headers = [
-                ["Punto Simulación", "Inversión Total (USD)", `Inversión ${nameA} (USD)`, `Inversión ${nameB} (USD)`, `Alcance ${nameA} (%)`, `Alcance ${nameB} (%)`, "Alcance Integración (A+B) (%)", "Incremento Neto vs Max (pp)", "Eficiencia pp/MM"]
+                ["Punto Simulación", "Inversión Total (USD)", `Inversión ${nameA} (USD)`, `Inversión ${nameB} (USD)`, `Alcance ${nameA} (%)`, `Alcance ${nameB} (%)`, "Alcance Integración (A+B) (%)", "Diferencia de alcance vs mejor medio con presupuesto total (pp)", "Eficiencia pp/MM"]
             ];
 
             const rows = tableDataCache.map(r => [
@@ -1867,7 +1914,7 @@
                 alert("No hay datos simulados para exportar.");
                 return;
             }
-            let csv = "Punto,Inversion_Total,Inversion_A,Inversion_B,Alcance_A_Pct,Alcance_B_Pct,Alcance_Fusion_Pct,Incremento_Neto_pp,pp_MM\n";
+            let csv = "Punto,Inversion_Total,Inversion_A,Inversion_B,Alcance_A_Pct,Alcance_B_Pct,Alcance_Fusion_Pct,Diferencia_vs_Mejor_Medio_Presupuesto_Total_pp,pp_MM\n";
             tableDataCache.forEach(r => {
                 csv += `${r.punto},${r.inversionTotal},${r.inversionA},${r.inversionB},${r.alcanceA},${r.alcanceB},${r.alcanceFusion},${r.incrementoPuro},${r.ppMM}\n`;
             });
